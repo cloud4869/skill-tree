@@ -1,0 +1,499 @@
+/* ─────────────────────────────────────────
+   Claude Code スキルツリー — スタイルシート
+   ─────────────────────────────────────────
+   テーマ: ダーク / ゲーム風
+*/
+
+/* ── リセット & ベース ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:         #07071a;
+  --bg-card:    #10102a;
+  --bg-hover:   #1a1a38;
+  --border:     #2a2a50;
+  --text:       #c8c8e8;
+  --text-dim:   #6060a0;
+  --accent:     #5b8fff;
+
+  --untouched:  #0e0e1e;
+  --learning:   #0a2048;
+  --mastered:   #0a2820;
+
+  --c-untouched: #33334a;
+  --c-learning:  #4a9eff;
+  --c-mastered:  #4adf8f;
+}
+
+html, body {
+  height: 100%;
+  font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ── ヘッダー ── */
+#header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 10px 24px;
+  background: rgba(10, 10, 30, 0.95);
+  border-bottom: 1px solid var(--border);
+  height: 56px;
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+#header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e8e8ff;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+}
+
+#progress-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+#progress-text {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+#progress-bar-container {
+  flex: 1;
+  max-width: 240px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#progress-bar {
+  height: 100%;
+  width: 0;
+  background: var(--c-learning);
+  border-radius: 3px;
+  transition: width 0.5s ease, background 0.5s ease;
+}
+
+#reset-btn {
+  padding: 5px 14px;
+  font-size: 0.75rem;
+  background: transparent;
+  border: 1px solid #ff4466;
+  color: #ff4466;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+#reset-btn:hover { background: rgba(255,68,102,0.15); }
+
+/* ── 凡例 ── */
+#legend {
+  display: flex;
+  gap: 16px;
+  padding: 8px 24px;
+  background: rgba(10,10,26,0.8);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.legend-item::before {
+  content: '';
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid;
+}
+.legend-item.untouched::before { background: var(--untouched); border-color: var(--c-untouched); }
+.legend-item.learning::before  { background: var(--learning);  border-color: var(--c-learning); box-shadow: 0 0 6px var(--c-learning); }
+.legend-item.mastered::before  { background: var(--mastered);  border-color: var(--c-mastered); box-shadow: 0 0 6px var(--c-mastered); }
+
+/* ── ツリーラッパー（スクロール） ── */
+#tree-wrapper {
+  overflow: auto;
+  flex: 1;
+  position: relative;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+/* ── ツリーコンテナ ── */
+#tree-container {
+  position: relative;
+  width:  1920px;
+  height: 740px;
+  min-width: 1920px;
+}
+
+/* 背景グリッド */
+#tree-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(80,80,160,0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(80,80,160,0.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+#connections-svg {
+  position: absolute;
+  top: 0; left: 0;
+  pointer-events: none;
+}
+
+#nodes-container {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+}
+
+/* ── グループラベル ── */
+.group-label {
+  position: absolute;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border: 1px solid;
+  border-radius: 12px;
+  background: rgba(7,7,26,0.85);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ── スキルノード ── */
+.skill-node {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+}
+
+.skill-node:hover {
+  transform: scale(1.12);
+  z-index: 5;
+}
+
+/* ラベルをノードの外（下）に表示 */
+.node-label {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.65rem;
+  color: var(--text);
+  white-space: nowrap;
+  text-align: center;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  max-width: 90px;
+  white-space: normal;
+  line-height: 1.2;
+}
+
+.node-icon {
+  font-size: 1.3rem;
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+.node-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c-mastered);
+  color: #071a10;
+  font-size: 0.6rem;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.3);
+}
+
+/* ステータス別スタイル */
+
+/* 未着手: 暗め（文字は読める） */
+.status-untouched {
+  background: var(--untouched);
+  border-color: var(--c-untouched);
+  box-shadow: none;
+}
+.status-untouched .node-icon  { opacity: 0.45; }
+.status-untouched .node-label { color: #6868a0; }
+.status-untouched:hover {
+  box-shadow: 0 0 10px rgba(50,50,80,0.5);
+}
+.status-untouched:hover .node-icon  { opacity: 0.7; }
+.status-untouched:hover .node-label { color: #9090c0; }
+
+/* 学習中: 青く光る */
+.status-learning {
+  background: var(--learning);
+  border-color: var(--c-learning);
+  box-shadow: 0 0 16px rgba(74,158,255,0.45), inset 0 0 10px rgba(74,158,255,0.1);
+}
+.status-learning:hover {
+  box-shadow: 0 0 26px rgba(74,158,255,0.75), inset 0 0 16px rgba(74,158,255,0.15);
+}
+
+/* 習得済み: 緑に光る */
+.status-mastered {
+  background: var(--mastered);
+  border-color: var(--c-mastered);
+  box-shadow: 0 0 18px rgba(74,223,143,0.45), inset 0 0 12px rgba(74,223,143,0.12);
+}
+.status-mastered:hover {
+  box-shadow: 0 0 28px rgba(74,223,143,0.75), inset 0 0 18px rgba(74,223,143,0.18);
+}
+
+/* ── モーダル ── */
+#modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  backdrop-filter: blur(4px);
+}
+
+#modal-overlay.active { display: flex; }
+
+#modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  width: 540px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 0 60px rgba(0,0,80,0.6), 0 0 120px rgba(0,0,50,0.4);
+  animation: modal-in 0.2s ease;
+}
+
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+#modal-close {
+  position: absolute;
+  top: 14px; right: 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s, background 0.2s;
+}
+#modal-close:hover { color: #fff; background: rgba(255,255,255,0.1); }
+
+#modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+#modal-icon {
+  font-size: 2rem;
+  width: 52px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+}
+
+#modal-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+#modal-group {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+}
+
+/* 前提スキル警告 */
+#prereq-warning {
+  display: none;
+  background: rgba(255,160,0,0.1);
+  border: 1px solid rgba(255,160,0,0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.78rem;
+  color: #ffcc66;
+  margin-bottom: 14px;
+}
+
+/* ステータスボタン */
+#modal-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+#modal-status label {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+#status-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.status-btn {
+  padding: 5px 12px;
+  font-size: 0.75rem;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.18s;
+}
+
+.status-btn:hover { border-color: var(--text-dim); color: var(--text); }
+
+.status-btn[data-status="未着手"].active  { border-color: #6060a0; color: #9090cc; background: rgba(50,50,80,0.25); }
+.status-btn[data-status="学習中"].active  { border-color: var(--c-learning); color: var(--c-learning); background: rgba(74,158,255,0.15); box-shadow: 0 0 8px rgba(74,158,255,0.3); }
+.status-btn[data-status="習得済み"].active { border-color: var(--c-mastered); color: var(--c-mastered); background: rgba(74,223,143,0.15); box-shadow: 0 0 8px rgba(74,223,143,0.3); }
+
+/* モーダルセクション */
+.modal-section {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.modal-section h3 {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+}
+
+.modal-section p {
+  font-size: 0.82rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+/* メモエリア */
+#modal-notes {
+  width: 100%;
+  min-height: 80px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 8px 10px;
+  font-size: 0.82rem;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.6;
+}
+#modal-notes:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(91,143,255,0.15);
+}
+
+/* フッター */
+#modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+
+#modal-date {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+#save-btn {
+  padding: 8px 22px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.1s;
+}
+#save-btn:hover  { background: #7aaaff; }
+#save-btn:active { transform: scale(0.97); }
+
+/* ── スクロールバー ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #44448a; }
+
+/* ── レスポンシブ ── */
+@media (max-width: 600px) {
+  #header { padding: 8px 12px; gap: 10px; }
+  #header h1 { font-size: 0.9rem; }
+  #progress-bar-container { max-width: 120px; }
+  #modal { padding: 16px; }
+  #status-buttons { gap: 4px; }
+  .status-btn { padding: 4px 8px; font-size: 0.7rem; }
+}
